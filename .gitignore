@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+.env.production
+bling_manager.db
+uploads/
+seed_template.py
+*.db
