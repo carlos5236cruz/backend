@@ -8,6 +8,7 @@ from app.models.template import Template, TemplateColumn
 from app.models.product import Product, ProductValue, ExportLog
 from app.models.category import Category, CategoryAttribute
 from app.utils.security import hash_password
+from app.seed_categories import seed_categories
 from app.routers import auth, users, templates, products, categories, export, dashboard
 import traceback
 
@@ -90,6 +91,8 @@ def startup():
                 prod_admin.password_hash = hash_password("Atbeaauty1!")
 
             db.commit()
+
+            seed_categories(db, Category)
         finally:
             db.close()
     except Exception as e:
