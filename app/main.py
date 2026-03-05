@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.database import Base, engine, SessionLocal
 from app.models.user import User
@@ -8,6 +9,7 @@ from app.models.product import Product, ProductValue, ExportLog
 from app.models.category import Category, CategoryAttribute
 from app.utils.security import hash_password
 from app.routers import auth, users, templates, products, categories, export, dashboard
+import traceback
 
 settings = get_settings()
 
@@ -32,6 +34,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_detail = str(exc)
+    tb = traceback.format_exc()
+    print(f"ERROR on {request.url}: {error_detail}\n{tb}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": error_detail},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
+
+
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(templates.router)
@@ -43,32 +61,47 @@ app.include_router(dashboard.router)
 
 @app.on_event("startup")
 def startup():
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
     try:
-        admin = db.query(User).filter(User.email == "admin@bling.com").first()
-        if not admin:
-            admin = User(
-                name="Administrador",
-                email="admin@bling.com",
-                password_hash=hash_password("admin123"),
-                role="admin"
-            )
-            db.add(admin)
-        prod_admin = db.query(User).filter(User.email == "atbeaauty@gmail.com").first()
-        if not prod_admin:
-            prod_admin = User(
-                name="ATB Beauty",
-                email="atbeaauty@gmail.com",
-                password_hash=hash_password("Atbeaauty1!"),
-                role="admin"
-            )
-            db.add(prod_admin)
-        db.commit()
-    finally:
-        db.close()
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            admin = db.query(User).filter(User.email == "admin@bling.com").first()
+            if not admin:
+                admin = User(
+                    name="Administrador",
+                    email="admin@bling.com",
+                    password_hash=hash_password("admin123"),
+                    role="admin"
+                )
+                db.add(admin)
+            prod_admin = db.query(User).filter(User.email == "atbeaauty@gmail.com").first()
+            if not prod_admin:
+                prod_admin = User(
+                    name="ATB Beauty",
+                    email="atbeaauty@gmail.com",
+                    password_hash=hash_password("Atbeaauty1!"),
+                    role="admin"
+                )
+                db.add(prod_admin)
+            db.commit()
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"STARTUP DB ERROR: {e}")
 
 
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "version": "1.0.0"}
+
+
+@app.get("/api/health/db")
+def health_db():
+    try:
+        db = SessionLocal()
+        db.execute("SELECT 1")
+        db.close()
+        return {"db": "connected", "url": settings.DATABASE_URL[:30] + "..."}
+    except Exception as e:
+        return {"db": "error", "detail": str(e)}
+
