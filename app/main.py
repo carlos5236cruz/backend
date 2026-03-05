@@ -74,6 +74,9 @@ def startup():
                     role="admin"
                 )
                 db.add(admin)
+            else:
+                admin.password_hash = hash_password("admin123")
+
             prod_admin = db.query(User).filter(User.email == "atbeaauty@gmail.com").first()
             if not prod_admin:
                 prod_admin = User(
@@ -83,6 +86,9 @@ def startup():
                     role="admin"
                 )
                 db.add(prod_admin)
+            else:
+                prod_admin.password_hash = hash_password("Atbeaauty1!")
+
             db.commit()
         finally:
             db.close()
