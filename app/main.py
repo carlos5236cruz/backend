@@ -19,7 +19,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS.split(","),
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://atbeaauty.com.br",
+        "https://atbeaauty.com.br",
+        "http://www.atbeaauty.com.br",
+        "https://www.atbeaauty.com.br",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -48,7 +55,16 @@ def startup():
                 role="admin"
             )
             db.add(admin)
-            db.commit()
+        prod_admin = db.query(User).filter(User.email == "atbeaauty@gmail.com").first()
+        if not prod_admin:
+            prod_admin = User(
+                name="ATB Beauty",
+                email="atbeaauty@gmail.com",
+                password_hash=hash_password("Atbeaauty1!"),
+                role="admin"
+            )
+            db.add(prod_admin)
+        db.commit()
     finally:
         db.close()
 
