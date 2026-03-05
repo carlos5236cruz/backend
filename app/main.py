@@ -97,11 +97,13 @@ def health_check():
 
 @app.get("/api/health/db")
 def health_db():
+    from sqlalchemy import text as sa_text
     try:
         db = SessionLocal()
-        db.execute("SELECT 1")
+        db.execute(sa_text("SELECT 1"))
+        user_count = db.execute(sa_text("SELECT COUNT(*) FROM users")).scalar()
         db.close()
-        return {"db": "connected", "url": settings.DATABASE_URL[:30] + "..."}
+        return {"db": "connected", "users": user_count, "url": settings.DATABASE_URL[:30] + "..."}
     except Exception as e:
         return {"db": "error", "detail": str(e)}
 
